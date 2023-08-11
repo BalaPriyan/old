@@ -31,25 +31,47 @@ except:
 
 load_dotenv('config.env', override=True)
 
-UPSTREAM_REPO = environ.get('UPSTREAM_REPO')
-UPSTREAM_BRANCH = environ.get('UPSTREAM_BRANCH')
 try:
-    if len(UPSTREAM_REPO) == 0:
-       raise TypeError
+    if bool(environ.get('_____REMOVE_THIS_LINE_____')):
+        log_error('The README.md file there to read! Exiting now!')
+        exit()
 except:
-    UPSTREAM_REPO = "https://github.com/arshsisodiya/helios-mirror"
-try:
-    if len(UPSTREAM_BRANCH) == 0:
-       raise TypeError
-except:
-    UPSTREAM_BRANCH = 'h-code'
+    pass
+
+BOT_TOKEN = environ.get('BOT_TOKEN', '')
+if len(BOT_TOKEN) == 0:
+    log_error("BOT_TOKEN variable is missing! Exiting now")
+    exit(1)
+
+bot_id = BOT_TOKEN.split(':', 1)[0]
+
+DATABASE_URL = environ.get('DATABASE_URL', '')
+if len(DATABASE_URL) == 0:
+    DATABASE_URL = None
+
+if DATABASE_URL:
+    conn = MongoClient(DATABASE_URL)
+    db = conn.z
+    # retrun config dict (all env vars)
+    if config_dict := db.settings.config.find_one({'_id': bot_id}):
+        environ['UPSTREAM_REPO'] = config_dict['UPSTREAM_REPO']
+        environ['UPSTREAM_BRANCH'] = config_dict['UPSTREAM_BRANCH']
+    conn.close()
+
+UPSTREAM_REPO = environ.get('UPSTREAM_REPO', '')
+if len(UPSTREAM_REPO) == 0:
+    UPSTREAM_REPO = 'https://github.com/BalaPriyan/Copy-Master'
+
+UPSTREAM_BRANCH = environ.get('UPSTREAM_BRANCH', '')
+if len(UPSTREAM_BRANCH) == 0:
+    UPSTREAM_BRANCH = 'main'
 
 if ospath.exists('.git'):
     srun(["rm", "-rf", ".git"])
 
 update = srun([f"git init -q \
-                 && git config --global user.email arshtwitterbot@gmail.com \
-                 && git config --global user.name helios \
+                 && git config --global user.email dawn-in@z-mirror.live \
+                 && git config --global user.name z-mirror \
                  && git add . \
                  && git commit -sm update -q \
                  && git remote add origin {UPSTREAM_REPO} \
@@ -57,7 +79,11 @@ update = srun([f"git init -q \
                  && git reset --hard origin/{UPSTREAM_BRANCH} -q"], shell=True)
 
 if update.returncode == 0:
-    log_info('Successfully updated with latest commit from UPSTREAM_REPO')
+    log_info('Successfully updated with latest commit.')
+    log_info(f'Repo in use: {UPSTREAM_REPO}')
+    log_info(f'Branch in use: {UPSTREAM_BRANCH}')
+    log_info('Thanks For Using Coyp-Master')
 else:
-    log_error('Something went wrong while updating, check UPSTREAM_REPO if valid or not!')
-
+    log_error('Something went wrong while updating.')
+    log_info('Check if entered UPSTREAM_REPO is valid or not!')
+    log_info(f'Entered upstream repo: {UPSTREAM_REPO}')
